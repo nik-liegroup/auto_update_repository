@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Update AFM Repo
+Comment=Pull AFM analysis repo via shared PowerShell script
+Exec=pwsh -NoExit -ExecutionPolicy Bypass -File /opt/afm-auto-pull/auto-pull.ps1
+Icon=utilities-terminal
+Terminal=true
+Categories=Development;
