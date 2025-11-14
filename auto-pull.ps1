@@ -16,7 +16,7 @@
 
 param(
     # SSH URL of your repo
-    [string]$RepoUrl       = "git@github.com:nik-liegroup/pytraction_backup.git",
+    [string]$RepoUrl       = "git@github.com:JuliaMBecker/afm.git",
 
     # Branch to track
     [string]$Branch        = "main",
@@ -44,18 +44,25 @@ function Fail {
     exit 1
 }
 
-Write-Host "Starting auto-pull.ps1 for user $env:USER..."
+$user = $env:USER
+if (-not $user) {
+    $user = $env:USERNAME
+}
+Write-Host "Starting auto-pull.ps1 for user $user..."
+Write-Host ""
 Write-Host ""
 
 # -------------------------
 # Derive user-specific target if not given
 # -------------------------
 if ([string]::IsNullOrWhiteSpace($TargetPath)) {
-    $home = $env:HOME
-    if (-not $home) {
-        Fail "HOME environment variable is not set. Cannot determine user-specific path."
+    if (-not $Home) {
+        $Home = $env:USERPROFILE  # Windows fallback
     }
-    $TargetPath = Join-Path $home "afm-analysis"
+    if (-not $Home) {
+        Fail "Neither HOME nor USERPROFILE are set. Cannot determine user-specific path."
+    }
+    $TargetPath = Join-Path $Home "afm-analysis"
 }
 
 # -------------------------
@@ -183,5 +190,3 @@ if (-not $IsRepo) {
 
 Write-Host ""
 Write-Host "Done."
-Write-Host ""
-Read-Host "Press Enter to close"
