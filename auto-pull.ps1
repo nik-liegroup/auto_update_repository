@@ -3,15 +3,15 @@
     ----------------
     Uses a GitHub deploy key to clone or update a private repo.
 
-    Requirements:
-      - PowerShell 7+
-      - git installed and in PATH
-      - OpenSSH client available (Windows 10+ usually has this)
-      - Deploy key private file on disk
+    Multi-user friendly:
+      - git and PowerShell 7 installed system-wide
+      - Script + key live in /opt/afm-auto-pull (read-only for most users)
+      - Each user gets their own clone in $HOME/afm-analysis by default
 
     Usage examples:
-      pwsh .\auto-pull.ps1
-      pwsh .\auto-pull.ps1 -HardReset
+      pwsh /opt/afm-auto-pull/auto-pull.ps1
+      pwsh /opt/afm-auto-pull/auto-pull.ps1 -HardReset
+      pwsh /opt/afm-auto-pull/auto-pull.ps1 -TargetPath "/some/custom/folder"
 #>
 
 param(
@@ -21,15 +21,12 @@ param(
     # Branch to track
     [string]$Branch        = "main",
 
-    # Local folder where the repo should live
-    # Windows: [string]$TargetPath    = "C:\Users\ngampl\Desktop\RepoTest",
-    # Ubuntu:  [string]$TargetPath    = "/home/user/Documents/git/afm-analysis",
-    [string]$TargetPath    = "C:\Users\ngampl\Desktop\RepoTest",
+    # Local folder where the repo should live (per user)
+    # If empty, defaults to $HOME/afm-analysis
+    [string]$TargetPath    = "",
 
-    # Path to the *private* deploy key file
-    # Windows: [string]$PrivateKeyPath = "C:\Users\ngampl\.ssh\id_ed25519_afm_analysis",
-    # Ubuntu:  [string]$PrivateKeyPath = "/home/user/.ssh/git/id_ed25519_afm_analysis",
-    [string]$PrivateKeyPath = "C:\Users\ngampl\.ssh\id_ed25519_afm_analysis",
+    # Path to the *private* deploy key file (shared)
+    [string]$PrivateKeyPath = "/opt/afm-auto-pull/id_ed25519_afm_analysis",
 
     # If set, use 'git reset --hard origin/<branch>' instead of a fast-forward merge
     [switch]$HardReset
@@ -47,8 +44,19 @@ function Fail {
     exit 1
 }
 
-Write-Host "Starting auto-pull.ps1..."
+Write-Host "Starting auto-pull.ps1 for user $env:USER..."
 Write-Host ""
+
+# -------------------------
+# Derive user-specific target if not given
+# -------------------------
+if ([string]::IsNullOrWhiteSpace($TargetPath)) {
+    $home = $env:HOME
+    if (-not $home) {
+        Fail "HOME environment variable is not set. Cannot determine user-specific path."
+    }
+    $TargetPath = Join-Path $home "afm-analysis"
+}
 
 # -------------------------
 # 1) Basic checks
@@ -58,10 +66,10 @@ Write-Host ""
 try {
     $gitVersion = git --version 2>$null
     if (-not $gitVersion) {
-        Fail "git is not available on PATH. Install Git for Windows first."
+        Fail "git is not available on PATH. Please install git."
     }
 } catch {
-    Fail "git is not available on PATH. Install Git for Windows first."
+    Fail "git is not available on PATH. Please install git."
 }
 
 # Check key file
@@ -175,3 +183,5 @@ if (-not $IsRepo) {
 
 Write-Host ""
 Write-Host "Done."
+Write-Host ""
+Read-Host "Press Enter to close"
